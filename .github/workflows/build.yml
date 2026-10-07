@@ -1,14 +1,12 @@
-name: Desktop Build
+name: Desktop Release
 
 on:
   push:
     branches: ["main"]
-  pull_request:
-    branches: ["main"]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -24,18 +22,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
       - name: Download FFmpeg sidecar (Linux)
         if: runner.os == 'Linux'
         shell: bash
@@ -48,21 +50,36 @@ jobs:
           test -n "$FFmpeg"
           cp "$FFmpeg" src-tauri/binaries/ffmpeg-x86_64-unknown-linux-gnu
           chmod +x src-tauri/binaries/ffmpeg-x86_64-unknown-linux-gnu
+
       - name: Download FFmpeg sidecar (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force src-tauri/binaries | Out-Null
-          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "$env:TEMPfmpeg.zip"
-          Expand-Archive "$env:TEMPfmpeg.zip" "$env:TEMPfmpeg" -Force
-          $ffmpeg = Get-ChildItem "$env:TEMPfmpeg" -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "$env:TEMP\ffmpeg.zip"
+          Expand-Archive "$env:TEMP\ffmpeg.zip" "$env:TEMP\ffmpeg" -Force
+          $ffmpeg = Get-ChildItem "$env:TEMP\ffmpeg" -Recurse -Filter ffmpeg.exe | Select-Object -First 1
           if (-not $ffmpeg) { throw "FFmpeg não encontrado no pacote." }
           Copy-Item $ffmpeg.FullName "src-tauri/binaries/ffmpeg-x86_64-pc-windows-msvc.exe" -Force
+
       - name: Install frontend dependencies
         run: npm ci
-      - name: Type-check
+
+      - name: Lint
         run: npm run lint
-      - name: Build Tauri bundles
-        uses: tauri-apps/tauri-action@v1
+
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tagName: app-v__VERSION__
+          releaseName: "Conversor de Vídeo TV 1080p v__VERSION__"
+          releaseBody: |
+            Release automática do Conversor de Vídeo TV 1080p.
+
+            Os instaladores para Linux e Windows estão disponíveis nos assets abaixo.
+          releaseDraft: false
+          prerelease: false
+          generateReleaseNotes: true
           uploadWorkflowArtifacts: true
