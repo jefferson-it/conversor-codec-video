@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Permissões do Conversor de Vídeo TV 1080p","local":true,"windows":["main"],"permissions":["core:default",{"identifier":"shell:allow-spawn","allow":[{"args":true,"name":"binaries/ffmpeg","sidecar":true}]},"dialog:default"]}}

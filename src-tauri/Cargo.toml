@@ -1,0 +1,20 @@
+[package]
+name = "conversor-video-tv1080p"
+version = "1.0.0"
+description = "Conversor de vídeo TV 1080p com FFmpeg nativo"
+authors = ["Jefferson Silva"]
+edition = "2021"
+
+[lib]
+name = "conversor_video_tv1080p_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.2", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.1", features = ["protocol-asset"] }
+tauri-plugin-shell = "2.4.0"
+tauri-plugin-dialog = "2.8.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
